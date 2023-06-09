@@ -1,4 +1,4 @@
-package org.example;
+package org.example.wordcount;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
