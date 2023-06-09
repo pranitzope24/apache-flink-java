@@ -24,6 +24,8 @@ public class WordCountStreaming {
         counts.print();
         env.execute("JOB");
     }
+
+    //Tokeniser Similar to WordCount.Tokenizer,  hence imported.
 }
 
 
