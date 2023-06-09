@@ -10,7 +10,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 public class AverageProfit {
     public static void main(String[] args) throws Exception{
-        System.out.println("\n\n\n\n");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         ParameterTool params = ParameterTool.fromArgs(args);
         env.getConfig().setGlobalJobParameters(params);
@@ -33,7 +32,7 @@ public class AverageProfit {
 
     public static class ProfitCalculator implements MapFunction<Tuple5<String, String, String, Integer, Integer>, Tuple2<String, Double>>{
         @Override
-        public Tuple2<String, Double> map(Tuple5<String, String, String, Integer, Integer> in) throws Exception {
+        public Tuple2<String, Double> map(Tuple5<String, String, String, Integer, Integer> in) {
             return new Tuple2<>(in.f0, new Double((in.f3 * 1.0) / in.f4));
         }
     }
@@ -42,7 +41,7 @@ public class AverageProfit {
 
         @Override
         public Tuple5<String, String, String, Integer, Integer> reduce(Tuple5<String, String, String, Integer, Integer> current,
-                                                                       Tuple5<String, String, String, Integer, Integer> pre_res) throws Exception {
+                                                                       Tuple5<String, String, String, Integer, Integer> pre_res) {
             return new Tuple5<>(
                     current.f0,
                     current.f1,
@@ -55,7 +54,7 @@ public class AverageProfit {
 
     public static class Splitter implements MapFunction<String, Tuple5<String,String,String,Integer,Integer>> {
         @Override
-        public Tuple5<String, String, String, Integer, Integer> map(String s) throws Exception {
+        public Tuple5<String, String, String, Integer, Integer> map(String s) {
             String[] w = s.split(",");
             return new Tuple5<>(w[1], w[2], w[3], Integer.parseInt(w[4]), 1);
         }
