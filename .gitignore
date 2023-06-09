@@ -54,7 +54,3 @@ buildNumber.properties
 
 # Eclipse m2e generated files
 # Eclipse Core
-.project
-# JDT-specific (Eclipse Java Development Tools)
-.classpath
->>>>>>> 3a52d033373e404323eb4043f00751ef8ce641cb
