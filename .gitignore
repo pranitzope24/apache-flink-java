@@ -6,6 +6,7 @@ target/
 !**/src/
 /target/
 /out/
+out/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
