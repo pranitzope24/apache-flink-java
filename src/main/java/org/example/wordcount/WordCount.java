@@ -23,7 +23,8 @@ public class WordCount {
         DataSet<Tuple2<String, Integer>> counts = tokenized.groupBy(0).sum(1);
 
         if (params.has("output")){
-            counts.writeAsCsv(params.get("output"), "\n"," ");
+            counts.writeAsText(params.get("output"));
+            System.out.println("DONE");
             env.execute("WordCount Example");
         }
     }

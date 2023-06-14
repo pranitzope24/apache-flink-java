@@ -6,7 +6,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
-public class Aggregation {
+public class AggregationDemo {
     public static void main (String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         ParameterTool params = ParameterTool.fromArgs(args);
@@ -26,7 +26,7 @@ public class Aggregation {
 
         mapped.keyBy(t -> t.f0).maxBy(3).writeAsText("/home/pranit/out5.txt");
 
-        env.execute("Aggregation");
+        env.execute("AggregationDemo");
     }
 
 

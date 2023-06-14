@@ -1,3 +1,3 @@
 Manifest-Version: 1.0
-Main-Class: org.example.demo.Aggregation
+Main-Class: org.example.agg.Aggregation
 
