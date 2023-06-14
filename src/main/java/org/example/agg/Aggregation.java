@@ -1,5 +1,8 @@
 package org.example.agg;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -25,11 +28,21 @@ public class Aggregation {
     }
 
     public static class StatusChecker implements FlatMapFunction<String, Integer> {
+
+        private transient Gson gson;
+
         @Override
-        public void flatMap(String value, Collector<Integer> out) throws Exception {
-            if (value.equalsIgnoreCase("Success")) {
+        public void flatMap(String value, Collector<Integer> out) {
+
+            if(gson == null){
+                gson = new Gson();
+            }
+            JsonElement jsonElement = gson.fromJson(value, JsonObject.class).get("status");
+            String status = (jsonElement == null) ? "unknown" : jsonElement.getAsString();
+
+            if (status.equalsIgnoreCase("Success")) {
                 out.collect(1);
-            } else if (value.equalsIgnoreCase("Failure")) {
+            } else if (status.equalsIgnoreCase("Failure")) {
                 out.collect(0);
             }
         }
@@ -40,7 +53,7 @@ public class Aggregation {
         private int totalCount = 0;
 
         @Override
-        public Double map(Integer value) throws Exception {
+        public Double map(Integer value) {
             totalCount ++;
             successCount+= value;
             return (double) (successCount * 100) / totalCount;
