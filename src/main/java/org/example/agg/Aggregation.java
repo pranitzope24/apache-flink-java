@@ -1,14 +1,19 @@
 package org.example.agg;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
+
+import java.io.StringReader;
+import java.util.*;
 
 public class Aggregation {
     public static void main (String[] args) throws Exception {
@@ -17,46 +22,84 @@ public class Aggregation {
         env.getConfig().setGlobalJobParameters(params);
         env.setParallelism(1);
 
-        DataStream<String> data = env.socketTextStream("localhost", 9999);
+        DataStream<String> stringData = env.readTextFile(params.get("input")); //add param -> path to rawdata.txt
+        int n = params.getInt("size"); //add param -> size of list to be maintained
 
-        DataStream<Double> successPercentage = data
-                .flatMap(new StatusChecker())
+        DataStream<JsonObject> data = stringData
+                .map(new JsonConverterMap());
+
+        SingleOutputStreamOperator<JsonObject> objData = data
+                .filter(obj -> obj.get("id").getAsString().startsWith("nbpay"))
+                .filter(new StatusFilter());
+
+        DataStream<Double> successPercentage = objData
+                .flatMap(new StatusChecker(n))
                 .map(new SuccessPercentageCalculator());
 
         successPercentage.print();
         env.execute("Success Calculator");
     }
 
-    public static class StatusChecker implements FlatMapFunction<String, Integer> {
+    public static class StatusChecker implements FlatMapFunction<JsonObject, List<Integer>> {
 
-        private transient Gson gson;
+        private List<Integer> list = new ArrayList<>();
+        private int maxSize;
+
+        public StatusChecker(int size) {
+            this.maxSize = size;
+        }
 
         @Override
-        public void flatMap(String value, Collector<Integer> out) {
+        public void flatMap(JsonObject obj, Collector<List<Integer>> collector) {
+            String status = obj.get("state").getAsString();
 
+            if(list.size() >= this.maxSize) {
+                list.remove(0);
+            }
+
+            list.add( status.contains("SUCCESS") ? 1 : 0 );
+            collector.collect(list);
+        }
+    }
+
+    public static class SuccessPercentageCalculator implements MapFunction<List<Integer>, Double> {
+
+        @Override
+        public Double map(List<Integer> list) {
+            return successPercent(list);
+        }
+        public Double successPercent(List <Integer> list) {
+            int sum =0;
+            for(int x : list){
+                sum += x;
+            }
+            return (double) (sum*100)/(double) list.size();
+        }
+    }
+
+    public static class JsonConverterMap implements MapFunction<String, JsonObject>{
+        private transient Gson gson;
+
+        public JsonObject map(String s) {
             if(gson == null){
                 gson = new Gson();
             }
-            JsonElement jsonElement = gson.fromJson(value, JsonObject.class).get("status");
-            String status = (jsonElement == null) ? "unknown" : jsonElement.getAsString();
+            JsonReader jsonReader = new JsonReader(new StringReader(s));
+            jsonReader.setLenient(true);
 
-            if (status.equalsIgnoreCase("Success")) {
-                out.collect(1);
-            } else if (status.equalsIgnoreCase("Failure")) {
-                out.collect(0);
-            }
+            return gson.fromJson(jsonReader, JsonObject.class);
         }
+
     }
 
-    public static class SuccessPercentageCalculator implements MapFunction<Integer, Double> {
-        private int successCount = 0;
-        private int totalCount = 0;
+
+    public static class StatusFilter implements FilterFunction<JsonObject> {
 
         @Override
-        public Double map(Integer value) {
-            totalCount ++;
-            successCount+= value;
-            return (double) (successCount * 100) / totalCount;
+        public boolean filter(JsonObject obj) {
+            String s = obj.get("state").getAsString();
+            return (s.contains("SUCCESS") || s.contains("FAILED"));
         }
     }
+
 }
