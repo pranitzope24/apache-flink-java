@@ -41,8 +41,7 @@ public class Aggregation {
     }
 
     public static class StatusChecker implements FlatMapFunction<JsonObject, List<Integer>> {
-
-        private List<Integer> list = new ArrayList<>();
+        private State state;
         private int maxSize;
 
         public StatusChecker(int size) {
@@ -53,12 +52,33 @@ public class Aggregation {
         public void flatMap(JsonObject obj, Collector<List<Integer>> collector) {
             String status = obj.get("state").getAsString();
 
-            if(list.size() >= this.maxSize) {
-                list.remove(0);
+            if(state.queue.size() >= this.maxSize) {
+                state.queue.remove(0);
             }
 
-            list.add( status.contains("SUCCESS") ? 1 : 0 );
-            collector.collect(list);
+            state.queue.add( status.contains("SUCCESS") ? 1 : 0 );
+            collector.collect(state.queue);
+        }
+
+        public static class State {
+            private List<Integer> queue;
+            private double baseLine;
+
+            public List<Integer> getQueue() {
+                return queue;
+            }
+
+            public void setQueue(List<Integer> queue) {
+                this.queue = queue;
+            }
+
+            public double getBaseLine() {
+                return baseLine;
+            }
+
+            public void setBaseLine(double baseLine) {
+                this.baseLine = baseLine;
+            }
         }
     }
 
